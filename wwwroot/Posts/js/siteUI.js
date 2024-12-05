@@ -162,7 +162,9 @@ function showAbout() {
     $("#viewTitle").text("À propos...");
     $("#aboutContainer").show();
 }
-
+function renderCreateUserForm() {
+    renderUserForm();
+}
 //////////////////////////// Posts rendering /////////////////////////////////////////////////////////////
 
 //////////////////////////// Posts rendering /////////////////////////////////////////////////////////////
@@ -272,6 +274,12 @@ function updateDropDownMenu() {
     let selectClass = selectedCategory === "" ? "fa-check" : "fa-fw";
     DDMenu.empty();
     DDMenu.append($(`
+        <div class="dropdown-item menuItemLayout" id="connections">
+            <i class="menuIcon fa fa-sign-in mx-2"></i> Connexion
+        </div>
+        `));
+    DDMenu.append($(`<div class="dropdown-divider"></div>`));
+    DDMenu.append($(`
         <div class="dropdown-item menuItemLayout" id="allCatCmd">
             <i class="menuIcon fa ${selectClass} mx-2"></i> Toutes les catégories
         </div>
@@ -304,6 +312,10 @@ function updateDropDownMenu() {
         await showPosts(true);
         updateDropDownMenu();
     });
+    $('#connections').on("click", function () {
+        renderCreateUserForm();
+    });
+
 }
 function attach_Posts_UI_Events_Callback() {
 
