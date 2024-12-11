@@ -33,6 +33,7 @@ export default class AccountsController extends Controller {
                     if (user.Password == loginInfo.Password) {
                         user = this.repository.get(user.Id);
                         let newToken = TokenManager.create(user);
+                        
                         this.HttpContext.response.created(newToken);
                     } else {
                         this.HttpContext.response.wrongPassword("Wrong password.");
@@ -44,6 +45,8 @@ export default class AccountsController extends Controller {
         } else
             this.HttpContext.response.badRequest("Credential Email and password are missing.");
     }
+
+
     logout() {
         let userId = this.HttpContext.path.params.userId;
         if (userId) {
@@ -73,7 +76,7 @@ export default class AccountsController extends Controller {
         const gmail = new Gmail();
         gmail.send(user.Email, 'Courriel confirmé...', html);
     }
-
+   
     //GET : /accounts/verify?id=...&code=.....
     verify() {
         if (this.repository != null) {

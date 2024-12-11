@@ -91,7 +91,7 @@ export default
             }
         }
         return null;
-    }
+    } 
     static getUser(req) {
         if (req.headers["authorization"] != undefined) {
             // Extract bearer token from head of the http request

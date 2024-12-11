@@ -17,6 +17,14 @@ let itemLayout;
 let waiting = null;
 let showKeywords = false;
 let keywordsOnchangeTimger = null;
+let connectedUser = null;
+
+function getUserInfo() {
+    const session = JSON.parse(localStorage.getItem('userSession'));
+    if (!session) return null;
+
+    return session.user; // Retourne les infos utilisateur (id, name, email, etc.)
+}
 
 Init_UI();
 async function Init_UI() {
@@ -162,8 +170,11 @@ function showAbout() {
     $("#viewTitle").text("À propos...");
     $("#aboutContainer").show();
 }
-function renderCreateUserForm() {
-    renderUserForm();
+
+function renderCreateConexForm() {
+    showForm();
+    $("#viewTitle").text("Connexion");
+    renderConnexion();
 }
 //////////////////////////// Posts rendering /////////////////////////////////////////////////////////////
 
@@ -182,7 +193,7 @@ function start_Periodic_Refresh() {
             // the etag contain the number of model records in the following form
             // xxx-etag
             let postsCount = parseInt(etag.split("-")[0]);
-            if (currentETag != etag) {           
+            if (currentETag != etag) {
                 if (postsCount != currentPostsCount) {
                     console.log("postsCount", postsCount)
                     currentPostsCount = postsCount;
@@ -273,11 +284,35 @@ function updateDropDownMenu() {
     let DDMenu = $("#DDMenu");
     let selectClass = selectedCategory === "" ? "fa-check" : "fa-fw";
     DDMenu.empty();
-    DDMenu.append($(`
-        <div class="dropdown-item menuItemLayout" id="connections">
-            <i class="menuIcon fa fa-sign-in mx-2"></i> Connexion
-        </div>
+    user = getUserInfo();
+
+    if (user == null) {
+        // Affiche le bouton de connexion si l'utilisateur n'est pas connecté
+        DDMenu.append($(`
+            <div class="dropdown-item menuItemLayout" id="connexion">
+                <i class="menuIcon fa fa-sign-in mx-2"></i> Connexion
+            </div>
         `));
+    } else {
+        // Affiche les informations de l'utilisateur connecté
+        DDMenu.append($(`
+                <div class="d-flex align-items-center">
+                    <img src="${user.avatar}" alt="Avatar" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover; margin-right: 10px;">
+                  <strong>  <span>${user.name}</span></strong>  
+                </div>
+               
+                 <hr>
+                    <div class="dropdown-item menuItemLayout" id="editProfile">
+                        <i class="menuIcon fa fa-user-edit mx-2"></i> Modifier votre profil
+                    </div>
+                  <div class="dropdown-item menuItemLayout" id="logout">
+                        <i class="menuIcon fa fa-sign-in mx-2"></i> Déconnexion
+                    </div>
+           
+        `));
+    }
+    
+
     DDMenu.append($(`<div class="dropdown-divider"></div>`));
     DDMenu.append($(`
         <div class="dropdown-item menuItemLayout" id="allCatCmd">
@@ -312,9 +347,23 @@ function updateDropDownMenu() {
         await showPosts(true);
         updateDropDownMenu();
     });
-    $('#connections').on("click", function () {
-        renderCreateUserForm();
+
+    $('#connexion').on("click", function () {
+        renderCreateConexForm();
     });
+
+    $('#logout').on("click", function () {
+        logout();
+    });
+}
+async function logout(){
+    user = getUserInfo()
+    console.log(user);
+    await Users_API.Logout(user);
+
+
+    localStorage.removeItem('userSession');
+    await showPosts();
 
 }
 function attach_Posts_UI_Events_Callback() {
@@ -408,6 +457,7 @@ function highlightKeywords() {
 
 //////////////////////// Forms rendering /////////////////////////////////////////////////////////////////
 
+
 async function renderEditPostForm(id) {
     $('#commit').show();
     addWaitingGif();
@@ -461,6 +511,313 @@ async function renderDeletePostForm(id) {
     } else
         showError(Posts_API.currentHttpError);
 }
+function newUser() {
+    let User = {};
+    User.Id = 0;
+    User.Email = "";
+    User.Password = "";
+    User.Name = "";
+    User.Avatar = "no-avatar.png";
+    User.Created = 0;
+    User.Authorizations = {};
+    User.VerifyCode = "";
+    return User;
+}
+
+function renderUserForm(user = null) {
+    let create = user == null;
+    if (create) user = newUser();
+
+    $('#commit').show();
+    $("#form").show();
+    $("#form").empty();
+    $("#form").append(`
+        <form class="form" id="userForm">
+            <input type="hidden" name="Id" id="Id" value="${user.Id}"/>
+             <input type="hidden" name="Date" value="${user.Created}"/>
+             <div class= "EPform" >
+                <label for="Email" class="form-label">Adresse de courriel </label>
+                <input 
+                    class="form-control  Email "
+                    name="Email"
+                    id="Email"
+                    CustomErrorMessage="Ce courriel est déjà utilisé"
+                    placeholder="Courriel"
+                    required
+                    value="${user.Email}"
+                    RequireMessage="Veuillez entrer votre courriel" 
+                    InvalidMessage="Veuillez entrer un courriel valide"
+                    style="margin-bottom:10px;"
+                />
+             
+                <input 
+                    class="form-control MatchedInput "
+                    name="VerificationEmail"
+                    id="VerificationEmail"
+                    placeholder="Vérification"
+                    required
+                    matchedInputId="Email"
+                    value="${user.Email}"
+                />
+            </div>
+            <div class= "EPform" >
+                <label for="Password" class="form-label">Mot de passe </label>
+                <input 
+                    class="form-control "
+                    name="Password" 
+                    id="Password" 
+                    placeholder="Password"
+                
+                    required
+                    RequireMessage="Veuillez entrer un mot de passe"
+                    value="${user.Password}"
+                    style="margin-bottom:10px;"
+                    type="password"
+                />
+                <input 
+                    class="form-control MatchedInput"
+                    name="VerificationPassword" 
+                    id="VerificationPassword" 
+                    placeholder="Vérification"
+                    matchedInputId="Password"
+                    type="password"
+                    required
+                    value="${user.Password}"
+                />
+                    
+            </div>
+            <div class= "EPform" >
+                <label for="Name" class="form-label">Nom</label>
+                <input 
+                    class="form-control Alpha"
+                    name="Name" 
+                    id="Name" 
+                    placeholder="Nom"
+                    required
+                    RequireMessage="Veuillez entrer un nom"
+                    InvalidMessage="Le nom comporte un caractère illégal" 
+                    value="${user.Name}"
+                />
+              
+                    
+            </div>
+
+            <div class= "EPform" >
+                   <label class="form-label">Avatar </label>
+                <div class='imageUploaderContainer'>
+                <div class='imageUploader' 
+                     newImage='${create}' 
+                     controlId='Avatar' 
+                     imageSrc='${user.Avatar}' 
+                     waitingImage="Loading_icon.gif">
+                </div>
+            </div>
+              
+                    
+            </div>
+
+
+            <input type="submit" value="Enregistrer" id="saveUser" class="btn btn-primary displayNone">
+        </form>
+    `);
+
+    initImageUploaders();
+    initFormValidation();
+    addConflictValidation("http://localhost:5000/accounts/conflict", "Email", "saveUser");
+
+
+    $("#commit").click(function () {
+        $("#commit").off();
+        return $('#saveUser').trigger("click");
+    });
+    $('#userForm').on("submit", async function (event) {
+        event.preventDefault();
+        let user = getFormData($("#userForm"));
+
+        if (create) user.Created = Local_to_UTC(Date.now());
+
+        user = await Users_API.Save(user, create);
+        if (!Users_API.error) {
+            alert("Votre compte a été créé. Veuillez prendre vos courriels pour récupérer votre code de vérification qui vous sera demandé lors de votre prochaine connexion.")
+            await showPosts();
+            postsPanel.scrollToElem(post.Id);
+
+        }
+        else
+            showError("Une erreur est survenue! ", Users_API.currentHttpError);
+    });
+    $('#cancel').on("click", async function () {
+        await showPosts();
+    });
+
+
+}
+
+function renderConnexion() {
+   
+    $("#form").empty();
+    $('#commit').hide();
+   
+    $("#form").show();
+    $("#form").append(`
+          <form class="form" id="ConnexionForm">
+         <div  style="padding:100px;">
+ 
+               
+                <input 
+                    class="form-control"
+                    name="Email"
+                    id="Email"
+                    placeholder="Adresse de courriel"
+                    required
+                    style="margin-bottom:10px;"
+                 />
+                    <p id="EmailError" class="error-message" style="display: none; color: red;">Courriel introuvable</p>
+              <input 
+                    class="form-control"
+                    name="Password" 
+                    id="Password" 
+                    placeholder="Mot de passe"
+                    type="password"
+                    required
+                     style="margin-bottom:10px;"
+                />
+                 <p id="PasswordError" class="error-message" style="display: none; color: red;">Mot de passe incorrect</p>
+             
+             
+                <input type="submit" value="Entrer"  style="width: 100%;" id="Connexion" class="btn btn-primary ">
+        </form>
+        <hr>
+        <button type="button" id="inscription" style="width: 100%;" class="btn btn-info"> Nouveau compte</button>
+        `);
+    $('#inscription').on("click", function () {
+        renderUserForm();
+    });
+    $("#commit").click(function () {
+        $("#commit").off();
+        return $('#Connexion').trigger("click");
+    });
+    $('#ConnexionForm').on("submit", async function (event) {
+        console.log("ici");
+        event.preventDefault();
+        let user = getFormData($("#ConnexionForm"));
+
+        user = await Users_API.Connexion(user);
+        if (!Users_API.error) {
+            console.log(user);
+            if(user.User.VerifyCode == "verified"){
+
+                const userTokenData = {
+                    token: user.Access_token,
+                    expireTime: user.Expire_Time,
+                    user: {
+                        id: user.User.Id,
+                        name: user.User.Name,
+                        email: user.User.Email,
+                        avatar: user.User.Avatar
+                    }
+                };
+            
+                
+                localStorage.setItem('userSession', JSON.stringify(userTokenData));
+            
+                await showPosts();
+             
+            }else{
+                showVerificationForm(user.User.Id);
+            }
+        }
+        else {
+
+            switch (Users_API.currentStatus) {
+
+                case 481:
+                    $("#EmailError").show();
+                    $("#PasswordError").hide();
+                    break;
+                case 482:
+                    $("#EmailError").hide();
+                    $("#PasswordError").show();
+                    break;
+            }
+        }
+    });
+    $('#cancel').on("click", async function () {
+        await showPosts();
+    });
+
+}
+function showVerificationForm(id){
+    $("#form").show();
+    $("#form").empty();
+
+    $("#form").append(`
+        <form class="form" id="VerificationForm">
+       <div  style="padding:100px;">
+       <p >
+       <strong>Veuillez entrer le code de vérification que vous avez reçu par courriel </strong>
+
+       </p>
+             
+            <input type="hidden" name="id" id="id" value="${id}"/>
+              <input 
+                  class="form-control"
+                  name="VerificationCode"
+                  id="VerificationCode"
+                  placeholder="Code de vérification de courriel"
+                  required
+                  style="margin-bottom:10px;"
+               />
+                  <p id="VerificationError" class="error-message" style="display: none; color: red;">Le code de vérification n'est pas bon</p>
+      
+           
+              <input type="submit" value="Vérifier"  style="width: 100%;" id="VerificationSubmit" class="btn btn-primary ">
+      </form>
+       
+      `);
+
+      $("#commit").click(function () {
+        $("#commit").off();
+        return $('#VerificationSubmit').trigger("click");
+    });
+    $('#VerificationForm').on("submit", async function (event) {
+
+        event.preventDefault();
+        let data = getFormData($("#VerificationForm"));
+        
+        
+        data = await Users_API.VerifyCode(data);
+        if (!Users_API.error) {
+            alert("Connexion réussie");
+            const userTokenData = {
+                token: data.Access_token,
+                expireTime: data.Expire_Time,
+                user: {
+                    id: data.User.Id,
+                    name: data.User.Name,
+                    email: data.User.Email,
+                    avatar: data.User.Avatar
+                }
+            };
+        
+            
+            localStorage.setItem('userSession', JSON.stringify(userTokenData));
+        
+
+
+            await showPosts();
+            postsPanel.scrollToElem(post.Id);
+        }
+        else {
+            showError("Une erreur est survenue! ", Posts_API.currentHttpError);
+        }
+    });
+    $('#cancel').on("click", async function () {
+        await showPosts();
+    });
+}
+
+
 function newPost() {
     let Post = {};
     Post.Id = 0;

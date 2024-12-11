@@ -72,6 +72,7 @@ function initFormValidation() {
             event.target.checkValidity();
         })
         $(this).on("invalid", function (event) {
+            console.log("Champ invalide:", event.target.name, event.target.value);
             let validity = event.target.validity;
             if (validity.valueMissing)
                 event.target.setCustomValidity(RequireMessage);
@@ -87,7 +88,7 @@ function initFormValidation() {
     $(".MatchedInput").each(function () {
         let input = $(this);
         let matchedInput = $(`#${input.attr('matchedInputId')}`);
-        matchedInput.on("change", function () { input.attr("pattern", matchedInput.val()); })
+        matchedInput.on("change input", function () { input.attr("pattern", matchedInput.val()); })
         matchedInput.on("focus", function () { input.attr("pattern", matchedInput.val()); })
         input.on("focus", function () { input.attr("pattern", matchedInput.val()); })
     })

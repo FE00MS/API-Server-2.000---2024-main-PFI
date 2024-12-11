@@ -1,0 +1,22 @@
+
+
+.EPform{
+    border: 1px solid rgb(218, 214, 214); 
+    border-radius: 5px; 
+    padding-left:10px;
+    padding-right:10px;
+    padding-bottom:10px;
+    margin: 10px;
+}
+
+
+
+#userInfo img {
+    border: 2px solid #ddd;
+}
+
+#userInfo button {
+    font-size: 14px;
+    padding: 5px;
+}
+

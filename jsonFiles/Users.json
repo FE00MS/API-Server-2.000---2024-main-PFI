@@ -79,5 +79,22 @@
         },
         "VerifyCode": "verified",
         "Id": "f11ee960-aa82-11ef-b942-e7f097a2ee7a"
+    },
+    {
+        "Date": "0",
+        "Email": "femsboss@gmail.com",
+        "VerificationEmail": "femsboss@gmail.com",
+        "Password": "abc123",
+        "VerificationPassword": "abc123",
+        "Name": "loic",
+        "Avatar": "93f90c80-b76f-11ef-b52d-e9494838c897.png",
+        "Created": 1733905532,
+        "VerifyCode": "verified",
+        "Authorizations": {
+            "readAccess": 1,
+            "writeAccess": 1
+        },
+        "Verifycode": 502184,
+        "Id": "93f8e570-b76f-11ef-b52d-e9494838c897"
     }
 ]
