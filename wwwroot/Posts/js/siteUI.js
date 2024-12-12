@@ -101,17 +101,23 @@ function toogleShowKeywords() {
 /////////////////////////// Views management ////////////////////////////////////////////////////////////
 
 function intialView() {
+  let user = getUserInfo();
+  console.log(user);
+  if (user && user.Authorizations.writeAccess >= 2) {
     $("#createPost").show();
-    $("#hiddenIcon").hide();
-    $("#hiddenIcon2").hide();
-    $('#menu').show();
-    $('#commit').hide();
-    $('#abort').hide();
-    $('#form').hide();
-    $('#form').empty();
-    $('#aboutContainer').hide();
-    $('#errorContainer').hide();
-    showSearchIcon();
+  } else {
+    $("#createPost").hide();
+  }
+  $("#hiddenIcon").hide();
+  $("#hiddenIcon2").hide();
+  $("#menu").show();
+  $("#commit").hide();
+  $("#abort").hide();
+  $("#form").hide();
+  $("#form").empty();
+  $("#aboutContainer").hide();
+  $("#errorContainer").hide();
+  showSearchIcon();
 }
 async function showPosts(reset = false) {
     intialView();
@@ -119,11 +125,14 @@ async function showPosts(reset = false) {
     periodic_Refresh_paused = false;
     await postsPanel.show(reset);
 }
-function hidePosts() {
+function hidePosts(menu = false) {
     postsPanel.hide();
     hideSearchIcon();
     $("#createPost").hide();
-    $('#menu').hide();
+    if(!menu) {
+         $('#menu').hide();
+    }
+   
     periodic_Refresh_paused = true;
 }
 function showForm() {
@@ -170,7 +179,12 @@ function showAbout() {
     $("#viewTitle").text("À propos...");
     $("#aboutContainer").show();
 }
-
+function renderEditUserForm() {
+    showForm();
+    $("#viewTitle").text("Modification");
+    user = getUserInfo()
+    renderUserForm(user);
+}
 function renderCreateConexForm() {
     showForm();
     $("#viewTitle").text("Connexion");
@@ -297,8 +311,8 @@ function updateDropDownMenu() {
         // Affiche les informations de l'utilisateur connecté
         DDMenu.append($(`
                 <div class="d-flex align-items-center">
-                    <img src="${user.avatar}" alt="Avatar" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover; margin-right: 10px;">
-                  <strong>  <span>${user.name}</span></strong>  
+                    <img src="${user.Avatar}" alt="Avatar" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover; margin-right: 10px;">
+                  <strong>  <span>${user.Name}</span></strong>  
                 </div>
                
                  <hr>
@@ -355,10 +369,13 @@ function updateDropDownMenu() {
     $('#logout').on("click", function () {
         logout();
     });
+
+    $('#editProfile').on("click", function () {
+        renderEditUserForm();
+    });
 }
 async function logout(){
     user = getUserInfo()
-    console.log(user);
     await Users_API.Logout(user);
 
 
@@ -521,13 +538,13 @@ function newUser() {
     User.Created = 0;
     User.Authorizations = {};
     User.VerifyCode = "";
+ 
     return User;
 }
 
 function renderUserForm(user = null) {
     let create = user == null;
     if (create) user = newUser();
-
     $('#commit').show();
     $("#form").show();
     $("#form").empty();
@@ -535,6 +552,9 @@ function renderUserForm(user = null) {
         <form class="form" id="userForm">
             <input type="hidden" name="Id" id="Id" value="${user.Id}"/>
              <input type="hidden" name="Date" value="${user.Created}"/>
+               <input type="hidden" name="VerifyCode" value="${user.VerifyCode}"/>
+            <input type="hidden" name="Authorizations" value='${JSON.stringify(user.Authorizations)}'/>
+
              <div class= "EPform" >
                 <label for="Email" class="form-label">Adresse de courriel </label>
                 <input 
@@ -570,7 +590,7 @@ function renderUserForm(user = null) {
                 
                     required
                     RequireMessage="Veuillez entrer un mot de passe"
-                    value="${user.Password}"
+                    
                     style="margin-bottom:10px;"
                     type="password"
                 />
@@ -582,7 +602,7 @@ function renderUserForm(user = null) {
                     matchedInputId="Password"
                     type="password"
                     required
-                    value="${user.Password}"
+                    
                 />
                     
             </div>
@@ -633,12 +653,34 @@ function renderUserForm(user = null) {
     $('#userForm').on("submit", async function (event) {
         event.preventDefault();
         let user = getFormData($("#userForm"));
+        
+        if (user.Authorizations) {
+            user.Authorizations = JSON.parse(user.Authorizations);
+        }
 
-        if (create) user.Created = Local_to_UTC(Date.now());
+        
+        if (create){
+            user.Created = Local_to_UTC(Date.now());
+            user = await Users_API.Save(user);
+        } else{
+            
+            token  =  JSON.parse(localStorage.getItem('userSession'));           
+            user = await Users_API.Edit(user,token.token, create);
+            
+            const userTokenData = {
+                token: user.Access_token,
+                expireTime: user.Expire_Time,
+                user: user.User
+            };
+        
+            
+            localStorage.setItem('userSession', JSON.stringify(userTokenData));
+        }
 
-        user = await Users_API.Save(user, create);
         if (!Users_API.error) {
-            alert("Votre compte a été créé. Veuillez prendre vos courriels pour récupérer votre code de vérification qui vous sera demandé lors de votre prochaine connexion.")
+            if(create){
+                alert("Votre compte a été créé. Veuillez prendre vos courriels pour récupérer votre code de vérification qui vous sera demandé lors de votre prochaine connexion.")
+            }
             await showPosts();
             postsPanel.scrollToElem(post.Id);
 
@@ -690,6 +732,7 @@ function renderConnexion() {
         <hr>
         <button type="button" id="inscription" style="width: 100%;" class="btn btn-info"> Nouveau compte</button>
         `);
+      
     $('#inscription').on("click", function () {
         renderUserForm();
     });
@@ -701,21 +744,18 @@ function renderConnexion() {
         console.log("ici");
         event.preventDefault();
         let user = getFormData($("#ConnexionForm"));
-
+       
         user = await Users_API.Connexion(user);
+        console.log(user);
         if (!Users_API.error) {
-            console.log(user);
+          
             if(user.User.VerifyCode == "verified"){
+                
 
                 const userTokenData = {
                     token: user.Access_token,
                     expireTime: user.Expire_Time,
-                    user: {
-                        id: user.User.Id,
-                        name: user.User.Name,
-                        email: user.User.Email,
-                        avatar: user.User.Avatar
-                    }
+                    user: user.User
                 };
             
                 
@@ -786,18 +826,13 @@ function showVerificationForm(id){
         let data = getFormData($("#VerificationForm"));
         
         
-        data = await Users_API.VerifyCode(data);
+        user = await Users_API.VerifyCode(data);
         if (!Users_API.error) {
             alert("Connexion réussie");
             const userTokenData = {
-                token: data.Access_token,
-                expireTime: data.Expire_Time,
-                user: {
-                    id: data.User.Id,
-                    name: data.User.Name,
-                    email: data.User.Email,
-                    avatar: data.User.Avatar
-                }
+                token: user.Access_token,
+                expireTime: user.Expire_Time,
+                user: user.User
             };
         
             
@@ -806,7 +841,6 @@ function showVerificationForm(id){
 
 
             await showPosts();
-            postsPanel.scrollToElem(post.Id);
         }
         else {
             showError("Une erreur est survenue! ", Posts_API.currentHttpError);

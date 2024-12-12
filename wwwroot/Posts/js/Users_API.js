@@ -17,14 +17,33 @@ class Users_API{
         this.error = true;
     }
 
-    static async Save(data, create = true) {
+    static async Save(data) {
         Users_API.initHttpState();
+        
         return new Promise(resolve => {
             $.ajax({
-                url:   this.USERS_API_URL() + "/register",
-                type:    "POST" ,
+                url:this.USERS_API_URL()  + '/register'   ,
+                type: 'POST' ,
                 contentType: 'application/json',
                 data: JSON.stringify(data),
+                
+                success: (data) => { resolve(data); },
+                error: (xhr) => { Users_API.setHttpErrorState(xhr); resolve(null); }
+            });
+        });
+    }
+    static async Edit(data,token ) {
+        Users_API.initHttpState();
+        
+        return new Promise(resolve => {
+            $.ajax({
+                url:   this.USERS_API_URL() +'/modify',
+                type: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                headers: {
+                    'authorization': `Bearer ${token}` // Ajoutez l'en-tête Authorization
+                },
                 success: (data) => { resolve(data); },
                 error: (xhr) => { Users_API.setHttpErrorState(xhr); resolve(null); }
             });
