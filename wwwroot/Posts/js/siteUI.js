@@ -17,13 +17,13 @@ let itemLayout;
 let waiting = null;
 let showKeywords = false;
 let keywordsOnchangeTimger = null;
-let connectedUser = null;
+let connectedUser = getUserInfo();
 
 function getUserInfo() {
     const session = JSON.parse(localStorage.getItem('userSession'));
     if (!session) return null;
 
-    return session.user; // Retourne les infos utilisateur (id, name, email, etc.)
+    return session.user; 
 }
 
 Init_UI();
@@ -668,19 +668,16 @@ function renderUserForm(user = null) {
         if (create) {
             user.Created = Local_to_UTC(Date.now());
             user = await Users_API.Save(user);
+  
+           
+
         } else {
 
             token = JSON.parse(localStorage.getItem('userSession'));
             user = await Users_API.Edit(user, token.token, create);
-
-            const userTokenData = {
-                token: user.Access_token,
-                expireTime: user.Expire_Time,
-                user: user.User
-            };
-
-
-            localStorage.setItem('userSession', JSON.stringify(userTokenData));
+            user = logout();
+  
+        
         }
 
         if (!Users_API.error) {
@@ -751,7 +748,12 @@ function renderConnexion() {
         event.preventDefault();
         let user = getFormData($("#ConnexionForm"));
 
-        user = await Users_API.Connexion(user);
+        userAlreadyExist =getUserInfo();
+        if(userAlreadyExist){
+            user = await Users_API.Connexion(userAlreadyExist);
+        }else{
+         user = await Users_API.Connexion(user);
+        }
         console.log(user);
         if (!Users_API.error) {
 
@@ -833,16 +835,9 @@ function showVerificationForm(id) {
 
 
         user = await Users_API.VerifyCode(data);
+        user = await Users_API.Logout(user);
         if (!Users_API.error) {
             alert("Connexion réussie");
-            const userTokenData = {
-                token: user.Access_token,
-                expireTime: user.Expire_Time,
-                user: user.User
-            };
-
-
-            localStorage.setItem('userSession', JSON.stringify(userTokenData));
 
 
 

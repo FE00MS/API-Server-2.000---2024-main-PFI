@@ -67,7 +67,7 @@ class Users_API{
         Users_API.initHttpState();
         return new Promise(resolve => {
             $.ajax({
-                url:   this.USERS_API_URL() + "/logout?userId=" +data.id ,
+                url:   this.USERS_API_URL() + "/logout?userId=" +data.Id ,
                 type:    "GET" ,
                 success: (data) => { resolve(data); },
                 error: (xhr) => { Users_API.setHttpErrorState(xhr); resolve(xhr.status); }
