@@ -101,23 +101,24 @@ function toogleShowKeywords() {
 /////////////////////////// Views management ////////////////////////////////////////////////////////////
 
 function intialView() {
-  let user = getUserInfo();
-  console.log(user);
-  if (user && user.Authorizations.writeAccess >= 2) {
-    $("#createPost").show();
-  } else {
-    $("#createPost").hide();
-  }
-  $("#hiddenIcon").hide();
-  $("#hiddenIcon2").hide();
-  $("#menu").show();
-  $("#commit").hide();
-  $("#abort").hide();
-  $("#form").hide();
-  $("#form").empty();
-  $("#aboutContainer").hide();
-  $("#errorContainer").hide();
-  showSearchIcon();
+    let user = getUserInfo();
+    console.log(user);
+
+    if (user && user.Authorizations.writeAccess >= 2) {
+        $("#createPost").show();
+    } else {
+        $("#createPost").hide();
+    }
+    $("#hiddenIcon").hide();
+    $("#hiddenIcon2").hide();
+    $("#menu").show();
+    $("#commit").hide();
+    $("#abort").hide();
+    $("#form").hide();
+    $("#form").empty();
+    $("#aboutContainer").hide();
+    $("#errorContainer").hide();
+    showSearchIcon();
 }
 async function showPosts(reset = false) {
     intialView();
@@ -129,10 +130,10 @@ function hidePosts(menu = false) {
     postsPanel.hide();
     hideSearchIcon();
     $("#createPost").hide();
-    if(!menu) {
-         $('#menu').hide();
+    if (!menu) {
+        $('#menu').hide();
     }
-   
+
     periodic_Refresh_paused = true;
 }
 function showForm() {
@@ -253,11 +254,16 @@ async function renderPosts(queryString) {
 }
 function renderPost(post, loggedUser) {
     let date = convertToFrenchDate(UTC_To_Local(post.Date));
-    let crudIcon =
-        `
+    let crudIcon = "";
+    if (user && user.Authorizations.writeAccess >= 2) {
+        crudIcon =
+            `
         <span class="editCmd cmdIconSmall fa fa-pencil" postId="${post.Id}" title="Modifier nouvelle"></span>
         <span class="deleteCmd cmdIconSmall fa fa-trash" postId="${post.Id}" title="Effacer nouvelle"></span>
         `;
+
+
+    }
 
     return $(`
         <div class="post" id="${post.Id}">
@@ -325,7 +331,7 @@ function updateDropDownMenu() {
            
         `));
     }
-    
+
 
     DDMenu.append($(`<div class="dropdown-divider"></div>`));
     DDMenu.append($(`
@@ -374,7 +380,7 @@ function updateDropDownMenu() {
         renderEditUserForm();
     });
 }
-async function logout(){
+async function logout() {
     user = getUserInfo()
     await Users_API.Logout(user);
 
@@ -538,7 +544,7 @@ function newUser() {
     User.Created = 0;
     User.Authorizations = {};
     User.VerifyCode = "";
- 
+
     return User;
 }
 
@@ -653,32 +659,32 @@ function renderUserForm(user = null) {
     $('#userForm').on("submit", async function (event) {
         event.preventDefault();
         let user = getFormData($("#userForm"));
-        
+
         if (user.Authorizations) {
             user.Authorizations = JSON.parse(user.Authorizations);
         }
 
-        
-        if (create){
+
+        if (create) {
             user.Created = Local_to_UTC(Date.now());
             user = await Users_API.Save(user);
-        } else{
-            
-            token  =  JSON.parse(localStorage.getItem('userSession'));           
-            user = await Users_API.Edit(user,token.token, create);
-            
+        } else {
+
+            token = JSON.parse(localStorage.getItem('userSession'));
+            user = await Users_API.Edit(user, token.token, create);
+
             const userTokenData = {
                 token: user.Access_token,
                 expireTime: user.Expire_Time,
                 user: user.User
             };
-        
-            
+
+
             localStorage.setItem('userSession', JSON.stringify(userTokenData));
         }
 
         if (!Users_API.error) {
-            if(create){
+            if (create) {
                 alert("Votre compte a été créé. Veuillez prendre vos courriels pour récupérer votre code de vérification qui vous sera demandé lors de votre prochaine connexion.")
             }
             await showPosts();
@@ -696,10 +702,10 @@ function renderUserForm(user = null) {
 }
 
 function renderConnexion() {
-   
+
     $("#form").empty();
     $('#commit').hide();
-   
+
     $("#form").show();
     $("#form").append(`
           <form class="form" id="ConnexionForm">
@@ -732,7 +738,7 @@ function renderConnexion() {
         <hr>
         <button type="button" id="inscription" style="width: 100%;" class="btn btn-info"> Nouveau compte</button>
         `);
-      
+
     $('#inscription').on("click", function () {
         renderUserForm();
     });
@@ -744,26 +750,26 @@ function renderConnexion() {
         console.log("ici");
         event.preventDefault();
         let user = getFormData($("#ConnexionForm"));
-       
+
         user = await Users_API.Connexion(user);
         console.log(user);
         if (!Users_API.error) {
-          
-            if(user.User.VerifyCode == "verified"){
-                
+
+            if (user.User.VerifyCode == "verified") {
+
 
                 const userTokenData = {
                     token: user.Access_token,
                     expireTime: user.Expire_Time,
                     user: user.User
                 };
-            
-                
+
+
                 localStorage.setItem('userSession', JSON.stringify(userTokenData));
-            
+
                 await showPosts();
-             
-            }else{
+
+            } else {
                 showVerificationForm(user.User.Id);
             }
         }
@@ -787,7 +793,7 @@ function renderConnexion() {
     });
 
 }
-function showVerificationForm(id){
+function showVerificationForm(id) {
     $("#form").show();
     $("#form").empty();
 
@@ -816,7 +822,7 @@ function showVerificationForm(id){
        
       `);
 
-      $("#commit").click(function () {
+    $("#commit").click(function () {
         $("#commit").off();
         return $('#VerificationSubmit').trigger("click");
     });
@@ -824,8 +830,8 @@ function showVerificationForm(id){
 
         event.preventDefault();
         let data = getFormData($("#VerificationForm"));
-        
-        
+
+
         user = await Users_API.VerifyCode(data);
         if (!Users_API.error) {
             alert("Connexion réussie");
@@ -834,10 +840,10 @@ function showVerificationForm(id){
                 expireTime: user.Expire_Time,
                 user: user.User
             };
-        
-            
+
+
             localStorage.setItem('userSession', JSON.stringify(userTokenData));
-        
+
 
 
             await showPosts();
